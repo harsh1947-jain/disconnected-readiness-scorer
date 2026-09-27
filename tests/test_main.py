@@ -1545,6 +1545,60 @@ class TestApplyExceptions:
         apply_exceptions(results, garak_exceptions, "llama-stack-provider-trustyai-garak")
         assert results[0].findings[0].severity == "blocker"
 
+    # --- odh-ide-extensions: loaded from production config/config.yaml ---
+
+    @pytest.fixture()
+    def odh_ide_extensions_exceptions(self):
+        cfg_path = str(Path(__file__).parent.parent / "config" / "config.yaml")
+        all_exc = load_exceptions(cfg_path)
+        exc = [e for e in all_exc if isinstance(e, dict) and e.get("repo") == "odh-ide-extensions"]
+        assert len(exc) == 1
+        return exc
+
+    def test_odh_ide_extensions_setup_py_stub_matched(self, odh_ide_extensions_exceptions):
+        results = [
+            RuleResult(
+                rule="python-imports-bundled",
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        "odh-jupyter-trash-cleanup/setup.py",
+                        4,
+                        "",
+                        "Runtime pip install detected — will fail without internet or internal mirror.",
+                    ),
+                ],
+            )
+        ]
+        apply_exceptions(
+            results, odh_ide_extensions_exceptions, "opendatahub-io/odh-ide-extensions"
+        )
+        assert results[0].findings[0].severity == "info"
+        assert results[0].passed is True
+
+    def test_odh_ide_extensions_other_setup_py_not_matched(self, odh_ide_extensions_exceptions):
+        results = [
+            RuleResult(
+                rule="python-imports-bundled",
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        "some-other-extension/setup.py",
+                        4,
+                        "",
+                        "Runtime pip install detected — will fail without internet or internal mirror.",
+                    ),
+                ],
+            )
+        ]
+        apply_exceptions(
+            results, odh_ide_extensions_exceptions, "opendatahub-io/odh-ide-extensions"
+        )
+        assert results[0].findings[0].severity == "blocker"
+        assert results[0].passed is False
+
 
 # --- report sorting ---
 

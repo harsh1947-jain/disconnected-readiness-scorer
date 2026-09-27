@@ -874,3 +874,11 @@ exceptions:
     images:
       - "quay.io/trustyai/trustyai-garak-lls-provider-dsp@sha256:*"
     reason: "Hardcoded digest-pinned DSP provider image — opendatahub-operator RELATED_IMAGE_* wiring pending for this component"
+
+  # --- odh-ide-extensions ---
+  - rules: python-imports-bundled
+    repo: odh-ide-extensions
+    paths:
+      - "odh-jupyter-trash-cleanup/setup.py"
+    message: "*Runtime pip install detected*"
+    reason: "Jupyter copier setup.py stub exits with instructional text that contains the words 'pip install'. The file does not invoke pip at runtime or install time."
