@@ -69,6 +69,34 @@ class TestScanFile:
         f.write_text("image: quay.io/org/img@sha256:" + "a" * 64)
         assert scan_file(f, tmp_path) == []
 
+    def test_tag_and_digest_ref_skipped(self, tmp_path):
+        f = tmp_path / "deploy.yaml"
+        f.write_text("image: quay.io/org/img:v1.2.3@sha256:" + "a" * 64)
+        assert scan_file(f, tmp_path) == []
+
+    def test_schema_description_tag_and_digest_skipped(self, tmp_path):
+        f = tmp_path / "schema.json"
+        digest = "6bf26b8dd45fc0f54aa3d85a141f80967e73d64d8a980f367c1e67a10b0e31a1"
+        f.write_text(
+            '"description": "the container image to use\\n'
+            "+kubeflow:example=\\"
+            "ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:v1.7.0@sha256:"
+            f'{digest}\\""'
+        )
+        assert scan_file(f, tmp_path) == []
+
+    def test_tag_still_flagged_when_digest_pinned_ref_is_adjacent(self, tmp_path):
+        f = tmp_path / "deploy.yaml"
+        f.write_text(
+            "image: quay.io/org/img:v1.2.3@sha256:"
+            + "a" * 64
+            + "\nimage: quay.io/org/other:latest\n"
+        )
+        findings = scan_file(f, tmp_path)
+        assert len(findings) == 1
+        assert findings[0].severity == "blocker"
+        assert findings[0].image == "quay.io/org/other:latest"
+
     def test_tag_ref_in_source_is_blocker(self, tmp_path):
         pkg = tmp_path / "pkg"
         pkg.mkdir()
@@ -311,6 +339,11 @@ class TestOciUri:
         f.write_text('uri="oci://quay.io/org/model@sha256:abcdef1234567890"')
         findings = scan_file(f, tmp_path)
         assert findings == []
+
+    def test_oci_uri_with_tag_and_digest_skipped(self, tmp_path):
+        f = tmp_path / "constants.py"
+        f.write_text('uri="oci://quay.io/org/model:v1@sha256:abcdef1234567890"')
+        assert scan_file(f, tmp_path) == []
 
     def test_oci_uri_deep_path(self, tmp_path):
         f = tmp_path / "conftest.py"

@@ -128,7 +128,7 @@ Enforces `@sha256:` digest pinning on all image references. See the [reference d
 
 Two regex patterns scan each line:
 
-1. **`IMAGE_REF_PATTERN`** — Matches qualified image references: `[protocol://]registry/repo/name[:tag|@digest]`. HTTP URLs are skipped. Images with `@sha256:` are accepted. Images with no tag/digest suffix are skipped (only refs with an explicit `:tag` are flagged). OCI URIs (`oci://`) are handled separately — they must also have `@sha256:` pinning.
+1. **`IMAGE_REF_PATTERN`** — Matches qualified image references: `[protocol://]registry/repo/name[:tag][@sha256:digest]`. HTTP URLs are skipped. Images pinned with `@sha256:` are accepted, including `name:tag@sha256:digest` (the tag is ignored when a digest follows it). Images with no tag/digest suffix are skipped (only refs with an explicit `:tag` and no digest are flagged). OCI URIs (`oci://`) are handled separately — they must also have `@sha256:` pinning.
 
 2. **`K8S_UNQUALIFIED_IMAGE`** — YAML-specific pattern matching `image: name:tag` on a single line (unqualified images without a registry). Only checked in `.yaml`/`.yml` files and only on lines not already matched by the first pattern.
 
