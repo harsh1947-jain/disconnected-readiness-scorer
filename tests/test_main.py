@@ -1599,6 +1599,54 @@ class TestApplyExceptions:
         assert results[0].findings[0].severity == "blocker"
         assert results[0].passed is False
 
+    def test_jest_dunder_tests_directory_is_excepted(self):
+        cfg_path = str(Path(__file__).parent.parent / "config" / "config.yaml")
+        exceptions = load_exceptions(cfg_path)
+        fixture = (
+            "workspaces/frontend/src/__tests__/cypress/cypress/fixtures/"
+            "workspaceKinds/validWorkspaceKind.yaml"
+        )
+        results = [
+            RuleResult(
+                rule=rule,
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        fixture,
+                        24,
+                        "jupyter/scipy-notebook:latest",
+                        "hardcoded image",
+                    )
+                ],
+            )
+            for rule in ("image-manifest-complete", "no-image-tags")
+        ]
+        apply_exceptions(results, exceptions, "opendatahub-io/workbenches")
+        for result in results:
+            assert result.findings[0].severity == "info"
+            assert result.passed is True
+
+        kept = [
+            RuleResult(
+                rule="no-image-tags",
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        "workspaces/frontend/src/app/pages/WorkspaceKinds/Form/"
+                        "yamlEditor/workspaceKindUpdateSchema.json",
+                        2579,
+                        "ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:v1.7.0",
+                        "uses tag",
+                    )
+                ],
+            )
+        ]
+        apply_exceptions(kept, exceptions, "opendatahub-io/workbenches")
+        assert kept[0].findings[0].severity == "blocker"
+        assert kept[0].passed is False
+
 
 # --- report sorting ---
 
