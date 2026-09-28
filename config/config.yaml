@@ -245,6 +245,20 @@ exceptions:
     reason: "Dev-only ktunnel webhook tunnel for local development — not deployed in production (same as kubeflow exception, fetched into opt/manifests)"
     reference: "https://issues.redhat.com/browse/RHOAIENG-69990"
 
+  # --- workbenches ---
+  # Upstream Kubeflow release pin. releasing/update-manifests-images.py rewrites
+  # newTag from releasing/version/VERSION. OpenShift AI does not pull this
+  # ghcr.io image: the UI is built into the dashboard module. The vendored copy
+  # of this file is already excepted on odh-dashboard.
+  - rules:
+      - image-manifest-complete
+      - no-image-tags
+    repo: workbenches
+    paths:
+      - "workspaces/frontend/manifests/kustomize/base/kustomization.yaml"
+    reason: "Upstream Kubeflow release image pin for the frontend. OpenShift AI does not pull ghcr.io/kubeflow/notebooks/workspaces-frontend; the UI is built into the dashboard module. The vendored copy of this file is already excepted on odh-dashboard."
+    reference: "https://issues.redhat.com/browse/RHOAIENG-96630"
+
   # --- notebooks ---
   - rules:
       - no-image-tags

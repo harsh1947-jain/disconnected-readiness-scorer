@@ -1647,6 +1647,84 @@ class TestApplyExceptions:
         assert kept[0].findings[0].severity == "blocker"
         assert kept[0].passed is False
 
+    # --- workbenches: loaded from production config/config.yaml ---
+
+    @pytest.fixture()
+    def workbenches_exceptions(self):
+        cfg_path = str(Path(__file__).parent.parent / "config" / "config.yaml")
+        all_exc = load_exceptions(cfg_path)
+        exc = [e for e in all_exc if isinstance(e, dict) and e.get("repo") == "workbenches"]
+        assert len(exc) == 1
+        return exc
+
+    def test_workbenches_frontend_kustomize_image_matched(self, workbenches_exceptions):
+        results = [
+            RuleResult(
+                rule=rule,
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        "workspaces/frontend/manifests/kustomize/base/kustomization.yaml",
+                        18,
+                        "ghcr.io/kubeflow/notebooks",
+                        "Hardcoded image 'ghcr.io/kubeflow/notebooks' has no RELATED_IMAGE_* wiring.",
+                    )
+                ],
+            )
+            for rule in ("image-manifest-complete", "no-image-tags")
+        ]
+        apply_exceptions(results, workbenches_exceptions, "opendatahub-io/workbenches")
+        for result in results:
+            assert result.findings[0].severity == "info"
+            assert result.passed is True
+
+    def test_workbenches_backend_and_controller_kustomize_not_matched(self, workbenches_exceptions):
+        results = [
+            RuleResult(
+                rule="image-manifest-complete",
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        path,
+                        20,
+                        "ghcr.io/kubeflow/notebooks",
+                        "Hardcoded image 'ghcr.io/kubeflow/notebooks' has no RELATED_IMAGE_* wiring.",
+                    )
+                ],
+            )
+            for path in (
+                "workspaces/backend/manifests/kustomize/base/kustomization.yaml",
+                "workspaces/controller/manifests/kustomize/base/manager/kustomization.yaml",
+            )
+        ]
+        apply_exceptions(results, workbenches_exceptions, "opendatahub-io/workbenches")
+        for result in results:
+            assert result.findings[0].severity == "blocker"
+            assert result.passed is False
+
+    def test_workbenches_other_image_ref_not_matched(self, workbenches_exceptions):
+        results = [
+            RuleResult(
+                rule="no-image-tags",
+                passed=False,
+                findings=[
+                    Finding(
+                        "blocker",
+                        "workspaces/frontend/src/app/pages/WorkspaceKinds/Form/"
+                        "yamlEditor/workspaceKindUpdateSchema.json",
+                        2579,
+                        "ghcr.io/kubeflow/kubeflow/notebook-servers/jupyter-scipy:v1.7.0",
+                        "uses tag",
+                    )
+                ],
+            )
+        ]
+        apply_exceptions(results, workbenches_exceptions, "opendatahub-io/workbenches")
+        assert results[0].findings[0].severity == "blocker"
+        assert results[0].passed is False
+
 
 # --- report sorting ---
 
