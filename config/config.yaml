@@ -35,6 +35,8 @@ exceptions:
     paths:
       - "**/test/**"
       - "**/tests/**"
+      # Jest names the directory __tests__, which does not match **/tests/**
+      - "**/__tests__/**"
       - "**/test_*/**"
       - "**/*_test/**"
       - "**/*_tests/**"

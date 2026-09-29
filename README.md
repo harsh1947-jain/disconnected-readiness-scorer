@@ -118,7 +118,7 @@ Path patterns support `**/` prefix to match at any depth (e.g. `**/Dockerfile` m
 
 The default `config/config.yaml` exceptions include:
 
-- **Test directories:** `**/test/**`, `**/*tests*/**`, `**/testdata/**`, `**/testing/**`, `**/e2e/**`, `**/mocks/**`, `**/contract-tests/**`, `**/hack/**`, `**/k8mocks/**`, `**/cypress/**`
+- **Test directories:** `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/*tests*/**`, `**/testdata/**`, `**/testing/**`, `**/e2e/**`, `**/mocks/**`, `**/contract-tests/**`, `**/hack/**`, `**/k8mocks/**`, `**/cypress/**`
 - **Test file suffixes:** `*_test.go`, `test_*.py`, `*.test.ts`, `*.spec.ts`, `*.test.yml`, `*.test.yaml`
 - **Test fixtures:** `**/recordings/**`, `**/snapshots/**`, `**/*.snap.json`
 - **Test kustomize overlays:** `config/overlays/test/**`, `config/overlays/kind-tests/**`, `config/samples/**`
