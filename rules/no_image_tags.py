@@ -59,10 +59,14 @@ try:
 except ModuleNotFoundError:
     from yaml_documentation_fields import documentation_field_lines
 
+# Group 3 is ``:tag`` or a bare ``@sha256:`` pin. Group 4 is the ``@sha256:``
+# pin when a tag precedes it (``name:tag@sha256:...``); group 3 cannot
+# consume the ``@``, so the pin would otherwise be dropped and the tag flagged.
 IMAGE_REF_PATTERN = re.compile(
     r"(https?://|oci://)?"
     r"((?:[\w.\-]+(?:\.[\w.\-]+)+(?::\d+)?/)?[\w.\-]+(?:/[\w.\-]+)+)"
     r"([:@][\w.\-:]+)?"
+    r"(@sha256:[\w.\-:]+)?"
 )
 
 K8S_UNQUALIFIED_IMAGE = re.compile(
@@ -90,6 +94,18 @@ _SKIP_FILENAMES = {
     "pnpm-workspace.yaml",
     "package.json",
 }
+
+
+def _is_sha256_pinned(ref_part: str | None, digest_part: str | None) -> bool:
+    """True when the reference is pinned with ``@sha256:``.
+
+    ``name@sha256:...`` is captured entirely in *ref_part*.
+    ``name:tag@sha256:...`` splits the tag into *ref_part* and the pin into
+    *digest_part*.
+    """
+    if digest_part and digest_part.startswith("@sha256:"):
+        return True
+    return bool(ref_part and ref_part.startswith("@sha256:"))
 
 
 def is_excluded_file(filepath: Path) -> bool:
@@ -182,8 +198,12 @@ def scan_file(
             prefix = match.group(1) or ""
             repo_part = match.group(2)
             ref_part = match.group(3)
+            digest_part = match.group(4)
 
             if prefix.startswith("http"):
+                continue
+
+            if _is_sha256_pinned(ref_part, digest_part):
                 continue
 
             is_oci = prefix == "oci://"
@@ -195,16 +215,12 @@ def scan_file(
                     continue
                 if any(len(p) <= 1 for p in repo_part.split("/")):
                     continue
-                if ref_part.startswith("@sha256:"):
-                    continue
                 domain = repo_part.split("/")[0].split(":")[0]
                 if domain in NON_REGISTRY_DOMAINS:
                     continue
                 if non_image_prefixes and any(repo_part.startswith(p) for p in non_image_prefixes):
                     continue
             if is_oci:
-                if ref_part and ref_part.startswith("@sha256:"):
-                    continue
                 image_str = f"oci://{repo_part}"
                 if ref_part:
                     image_str += ref_part
